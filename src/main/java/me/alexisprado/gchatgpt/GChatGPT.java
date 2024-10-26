@@ -18,7 +18,7 @@ import org.json.JSONObject;
 @ExtensionInfo(
         Title = "GChatGPT",
         Description = "ChatGPT IA",
-        Version = "1.3",
+        Version = "1.4",
         Author = "AlexisPrado"
 )
 
@@ -32,6 +32,10 @@ public class GChatGPT extends Extension {
     private String extraString = "Be smart. The output language is ''. The question is: ";
     private String language = "";
     private String chatMode = "none";
+    private String chatInstructionsgemini = "I will ask you for this. Answer a user question, but keep the response short and under 100 characters.";
+    private String extraStringgemini = "Be smart. The output language is ''. The question is: ";
+    private String languagegemini = "";
+    private String chatModegemini = "none";
     private boolean gptenabled = false;
     private boolean geminienabled = false;
 
@@ -96,18 +100,18 @@ public class GChatGPT extends Extension {
         }
 
         if (message.startsWith(":gemini lang ")) {
-            language = message.substring(":gemini lang ".length());
+            languagegemini = message.substring(":gemini lang ".length());
             hMessage.setBlocked(true);
-            sendToClient(new HPacket("Whisper", HMessage.Direction.TOCLIENT, -1, "Gemini: Language set to '" + language + "'.", 0, 30, 0, -1));
+            sendToClient(new HPacket("Whisper", HMessage.Direction.TOCLIENT, -1, "Gemini: Language set to '" + languagegemini + "'.", 0, 30, 0, -1));
         }
 
         if (message.equals(":gemini mode sarcasm") || message.equals(":gemini s")) {
             hMessage.setBlocked(true);
-            chatMode = "sarcasm";
+            chatModegemini = "sarcasm";
             sendToClient(new HPacket("Whisper", HMessage.Direction.TOCLIENT, -1, "Gemini: Sarcasm mode activated.", 0, 30, 0, -1));
         } else if (message.equals(":gemini mode earnest") || message.equals(":gemini e")) {
             hMessage.setBlocked(true);
-            chatMode = "earnest";
+            chatModegemini = "earnest";
             sendToClient(new HPacket("Whisper", HMessage.Direction.TOCLIENT, -1, "Gemini: Earnest mode activated.", 0, 30, 0, -1));
         }
 
@@ -127,6 +131,14 @@ public class GChatGPT extends Extension {
         } else if (chatMode.equals("earnest")) {
             chatInstructions = "I will ask you for this. Answer a user question, but keep the response short and under 100 characters.";
             extraString = "Be smart. The output language is '" + language + "'. The question is: ";
+        }
+
+        if (chatModegemini.equals("sarcasm")) {
+            chatInstructionsgemini = "I will ask you for this. Answer a user's question, but keep the response short and under 100 characters. Use modern internet language. No hashtags, emoticons, or emojis.";
+            extraStringgemini = "Be Friendly, smart and give cool humor answers with fresh answers and coolness and a little bit smart-ass with modern internet language. The Output Language is '" + languagegemini + "'. The question is: ";
+        } else if (chatMode.equals("earnest")) {
+            chatInstructionsgemini = "I will ask you for this. Answer a user question, but keep the response short and under 100 characters.";
+            extraStringgemini = "Be smart. The output language is '" + languagegemini + "'. The question is: ";
         }
     }
 
@@ -178,8 +190,8 @@ public class GChatGPT extends Extension {
                 for (String prefix : geminiPrefixes) {
                     if (prompt.startsWith(prefix) && geminienabled) {
                         String chatbotPrompt = prompt.substring(prefix.length());
-                        String chatbotResponse = getGeminiResponse(chatInstructions + " " + extraString + chatbotPrompt);
-                        System.out.println(chatInstructions + " " + extraString + chatbotPrompt);
+                        String chatbotResponse = getGeminiResponse(chatInstructionsgemini + " " + extraStringgemini + chatbotPrompt);
+                        System.out.println(chatInstructionsgemini + " " + extraStringgemini + chatbotPrompt);
 
                         if (chatPacketCount < 4) {
                             if (chatbotResponse.length() > 100) {
@@ -229,7 +241,7 @@ public class GChatGPT extends Extension {
 
         try {
             String encodedMessage = URLEncoder.encode(userMessage, StandardCharsets.UTF_8.toString());
-            apiUrl = "https://free-unoficial-gpt4o-mini-api-g70n.onrender.com/chat/?query=" + encodedMessage;
+            apiUrl = "https://hercai.onrender.com/v3/hercai?question=" + encodedMessage;
 
             URL url = new URL(apiUrl);
             connection = (HttpURLConnection) url.openConnection();
@@ -251,7 +263,7 @@ public class GChatGPT extends Extension {
             }
 
             JSONObject jsonResponse = new JSONObject(response.toString());
-            return jsonResponse.getString("results");
+            return jsonResponse.getString("reply");
 
         } catch (IOException | JSONException e) {
             e.printStackTrace();
