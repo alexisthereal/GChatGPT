@@ -18,7 +18,7 @@ import org.json.JSONObject;
 @ExtensionInfo(
         Title = "GChatGPT",
         Description = "ChatGPT IA",
-        Version = "1.1",
+        Version = "1.2",
         Author = "AlexisPrado"
 )
 
@@ -173,6 +173,14 @@ public class GChatGPT extends Extension {
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("Accept", "application/json");
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(20000);
+
+            try {
+                Thread.sleep(800);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
             String line;
