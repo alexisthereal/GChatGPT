@@ -1,12 +1,14 @@
 # GChatGPT
 
 ## Description
-GChatGPT is an extension for Habbo that utilizes ChatGPT's AI through the G-Earth program to enhance interactions. This extension introduces a set of commands to customize and improve your experience.
+GChatGPT is an extension for Habbo that utilizes ChatGPT AI and Gemini AI through the G-Earth program to enhance interactions. This extension introduces a set of commands to customize and improve your experience.
 
 ## Commands
 ### How to Use
 - `:gpt question` - Use this command to prompt ChatGPT with a question.
 - `:ChatGPT question` - You can also use this command to ask questions.
+- `:gemini question` - Use this command to prompt ChatGPT with a question.
+- `:Gemini question` - You can also use this command to ask questions.
 - `: x question` - ChatGPT will respond when you mention it with a question.
 
 ### Additional Commands
@@ -15,6 +17,11 @@ GChatGPT is an extension for Habbo that utilizes ChatGPT's AI through the G-Eart
 - `:gpt mode earnest/:gpt e` - Enable serious and straightforward responses from ChatGPT. (This command is only available to you; other users cannot use it.)
 - `:gpt on` - This command is used to activate ChatGPT chat in Habbo. (This command is only available to you; other users cannot use it.)
 - `:gpt off` - This command is used to deactivate ChatGPT chat in Habbo. (This command is only available to you; other users cannot use it.)
+- `:gemini lang language` - Change the language of ChatGPT's responses. (This command is only available to you; other users cannot use it.)
+- `:gemini mode sarcasm/:gemini s` - Enable sarcastic responses from ChatGPT. (This command is only available to you; other users cannot use it.)
+- `:gemini mode earnest/:gemini e` - Enable serious and straightforward responses from ChatGPT. (This command is only available to you; other users cannot use it.)
+- `:gemini on` - This command is used to activate ChatGPT chat in Habbo. (This command is only available to you; other users cannot use it.)
+- `:gemini off` - This command is used to deactivate ChatGPT chat in Habbo. (This command is only available to you; other users cannot use it.)
 
 ## Tutorial
 For a detailed tutorial on how to use GChatGPT, please watch this [tutorial video on YouTube](https://www.youtube.com/watch?v=bDcHONhZ75I).

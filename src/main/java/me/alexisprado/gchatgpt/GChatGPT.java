@@ -18,7 +18,7 @@ import org.json.JSONObject;
 @ExtensionInfo(
         Title = "GChatGPT",
         Description = "ChatGPT IA",
-        Version = "1.2",
+        Version = "1.3",
         Author = "AlexisPrado"
 )
 
@@ -33,6 +33,7 @@ public class GChatGPT extends Extension {
     private String language = "";
     private String chatMode = "none";
     private boolean gptenabled = false;
+    private boolean geminienabled = false;
 
     private GChatGPT(String[] args) {
         super(args);
@@ -94,6 +95,32 @@ public class GChatGPT extends Extension {
             sendToClient(new HPacket("Whisper", HMessage.Direction.TOCLIENT, -1, "GPT: Disabled.", 0, 30, 0, -1));
         }
 
+        if (message.startsWith(":gemini lang ")) {
+            language = message.substring(":gemini lang ".length());
+            hMessage.setBlocked(true);
+            sendToClient(new HPacket("Whisper", HMessage.Direction.TOCLIENT, -1, "Gemini: Language set to '" + language + "'.", 0, 30, 0, -1));
+        }
+
+        if (message.equals(":gemini mode sarcasm") || message.equals(":gemini s")) {
+            hMessage.setBlocked(true);
+            chatMode = "sarcasm";
+            sendToClient(new HPacket("Whisper", HMessage.Direction.TOCLIENT, -1, "Gemini: Sarcasm mode activated.", 0, 30, 0, -1));
+        } else if (message.equals(":gemini mode earnest") || message.equals(":gemini e")) {
+            hMessage.setBlocked(true);
+            chatMode = "earnest";
+            sendToClient(new HPacket("Whisper", HMessage.Direction.TOCLIENT, -1, "Gemini: Earnest mode activated.", 0, 30, 0, -1));
+        }
+
+        if (message.equals(":gemini on")) {
+            hMessage.setBlocked(true);
+            geminienabled = true;
+            sendToClient(new HPacket("Whisper", HMessage.Direction.TOCLIENT, -1, "Gemini: Enabled.", 0, 30, 0, -1));
+        } else if (message.equals(":gemini off")) {
+            hMessage.setBlocked(true);
+            geminienabled = false;
+            sendToClient(new HPacket("Whisper", HMessage.Direction.TOCLIENT, -1, "Gemini: Disabled.", 0, 30, 0, -1));
+        }
+
         if (chatMode.equals("sarcasm")) {
             chatInstructions = "I will ask you for this. Answer a user's question, but keep the response short and under 100 characters. Use modern internet language. No hashtags, emoticons, or emojis.";
             extraString = "Be Friendly, smart and give cool humor answers with fresh answers and coolness and a little bit smart-ass with modern internet language. The Output Language is '" + language + "'. The question is: ";
@@ -109,17 +136,20 @@ public class GChatGPT extends Extension {
     }
 
     private void InChat(HMessage hMessage) {
-        if (gptenabled) {
+        if (gptenabled || geminienabled) {
             int index = hMessage.getPacket().readInteger();
             String prompt = hMessage.getPacket().readString();
 
             if (index != YourIndex) {
-                String[] prefixes = {":gpt ", "@red@:gpt ", "@green@:gpt ", "@purple@:gpt ", "@blue@:gpt ", "@cyan@:gpt ", ":ChatGPT ", ": " + YourName + " "};
-                for (String prefix : prefixes) {
-                    if (prompt.startsWith(prefix)) {
+                String[] gptPrefixes = {":gpt ", "@red@:gpt ", "@green@:gpt ", "@purple@:gpt ", "@blue@:gpt ", "@cyan@:gpt ", ":ChatGPT ", ": " + YourName + " "};
+                String[] geminiPrefixes = {":gemini ", "@red@:gemini ", "@green@:gemini ", "@purple@:gemini ", "@blue@:gemini ", "@cyan@:gemini ", ":Gemini ", ": " + YourName + " "};
+
+                for (String prefix : gptPrefixes) {
+                    if (prompt.startsWith(prefix) && gptenabled) {
                         String chatbotPrompt = prompt.substring(prefix.length());
                         String chatbotResponse = getChatbotResponse(chatInstructions + " " + extraString + chatbotPrompt);
                         System.out.println(chatInstructions + " " + extraString + chatbotPrompt);
+
                         if (chatPacketCount < 4) {
                             if (chatbotResponse.length() > 100) {
                                 chatbotResponse = "I can't write the complete answer because it was too long as it exceeds 100 characters.";
@@ -141,6 +171,38 @@ public class GChatGPT extends Extension {
                         if (signPacketCount == 1) {
                             startResetThread();
                         }
+                        return;
+                    }
+                }
+
+                for (String prefix : geminiPrefixes) {
+                    if (prompt.startsWith(prefix) && geminienabled) {
+                        String chatbotPrompt = prompt.substring(prefix.length());
+                        String chatbotResponse = getGeminiResponse(chatInstructions + " " + extraString + chatbotPrompt);
+                        System.out.println(chatInstructions + " " + extraString + chatbotPrompt);
+
+                        if (chatPacketCount < 4) {
+                            if (chatbotResponse.length() > 100) {
+                                chatbotResponse = "I can't write the complete answer because it was too long as it exceeds 100 characters.";
+                            }
+                            long currentMillis = System.currentTimeMillis();
+                            if (currentMillis - lastIncrementTime > 4000) {
+                                chatPacketCount = 0;
+                            }
+
+                            lastIncrementTime = currentMillis;
+                            sendToServer(new HPacket("Chat", HMessage.Direction.TOSERVER, chatbotResponse, 0, 0));
+                            chatPacketCount++;
+                            System.out.println(chatPacketCount);
+                            System.out.println(chatbotResponse);
+                        } else {
+                            sendToServer(new HPacket("Sign", HMessage.Direction.TOSERVER, 13));
+                            signPacketCount++;
+                        }
+                        if (signPacketCount == 1) {
+                            startResetThread();
+                        }
+                        return;
                     }
                 }
             }
@@ -206,5 +268,60 @@ public class GChatGPT extends Extension {
                 connection.disconnect();
             }
         }
+    }
+
+    private String getGeminiResponse(String userMessage) {
+        String apiUrl;
+        HttpURLConnection connection = null;
+        BufferedReader reader = null;
+        StringBuilder response = new StringBuilder();
+
+        try {
+            String encodedMessage = URLEncoder.encode(userMessage, StandardCharsets.UTF_8.toString());
+            apiUrl = "https://sandipbaruwal.onrender.com/gemini?prompt=" + encodedMessage;
+
+            URL url = new URL(apiUrl);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(20000);
+
+            try {
+                Thread.sleep(800);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+
+            JSONObject jsonResponse = new JSONObject(response.toString());
+            String answer = jsonResponse.getString("answer");
+
+            return removeEmojis(answer);
+
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+            return "Error: Unable to get a response from Gemini.";
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private String removeEmojis(String text) {
+        return text.replaceAll("[\\p{So}\\p{Cn}]", "");
     }
 }
